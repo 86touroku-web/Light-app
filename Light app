@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=360, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ルアー在庫 軽量ランキング</title>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   ★GAS_URL・BROWSE_URLは必ず自分のデプロイURLに書き換えること
+   ══════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;}
+#wrap{max-width:480px;margin:0 auto;}
+
+/* ── ヘッダー（回覧アプリと同じ発想：絞り込みバー＋件数表示） ── */
+.hdr{position:sticky;top:0;z-index:10;background:#1a6b3c;color:#fff;padding:8px 10px;}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.hdr-title{font-size:15px;font-weight:800;}
+.hdr-cnt{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
+.filter-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+.filter-row::-webkit-scrollbar{display:none;}
+.fbtn{flex:0 0 auto;background:#ffffff;color:#1a5f4a;border:none;border-radius:14px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;}
+.fbtn.sl{background:#ec1c24;color:#fff;}
+.fbtn .fb-amt{font-weight:600;color:#666;margin-left:2px;}
+.fbtn.sl .fb-amt{color:#fff;}
+.fclear{flex:0 0 auto;background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:14px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* ── ソートバー ── */
+.sort-row{display:flex;gap:6px;padding:6px 10px;background:#e8f0ee;}
+.sbtn{flex:1;background:#ffffff;border:1px solid #cfd8dc;border-radius:8px;padding:5px 4px;font-size:11px;font-weight:700;color:#1a5f4a;cursor:pointer;}
+.sbtn.sl{background:#1a5f4a;color:#fff;border-color:#1a5f4a;}
+
+/* ── 商品名グループカード（3行構成） ── */
+.card{display:flex;flex-direction:column;padding:8px 12px;margin:6px 8px;background:#ffffff;border-radius:9px;border:1.5px solid #cfd8dc;gap:3px;}
+
+.row1{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.gn{font-size:15px;font-weight:700;color:#1a5f4a;line-height:1.3;flex:1 1 auto;min-width:0;overflow-wrap:break-word;word-break:break-word;}
+.row1-r{display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;padding-top:1px;}
+.gc{font-size:12px;font-weight:700;color:#111;}
+.link-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#1a6b3c;color:#fff;font-size:12px;font-weight:900;text-decoration:none;line-height:1;flex-shrink:0;}
+
+.row2{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;flex-wrap:wrap;}
+.buy{white-space:nowrap;}
+.pbuy-c0{color:#000000;}
+.pbuy-c1{color:#00a8f3;}
+.pbuy-c2{color:#11db4a;}
+.pbuy-c3{color:#ec1c24;}
+.pu{color:#ff31d2;white-space:nowrap;}
+.pd{color:#000000;white-space:nowrap;}
+.pno{color:#1a5f4a;white-space:nowrap;}
+.seq{font-size:10px;color:#000000;font-weight:600;white-space:nowrap;margin-left:auto;}
+
+.row3{font-size:12px;font-weight:700;color:#111;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.row3::-webkit-scrollbar{display:none;}
+.st-item{margin-right:6px;}
+
+.loading,.empty{text-align:center;color:#888;font-size:13px;padding:30px 0;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="hdr">
+    <div class="hdr-top">
+      <span class="hdr-title">ルアー在庫 軽量ランキング</span>
+      <span class="hdr-cnt" id="hcnt">0件表示中</span>
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+  </div>
+  <div class="sort-row">
+    <button class="sbtn" id="sortCntDesc" onclick="setSort('cnt','desc')">数量 多→少</button>
+    <button class="sbtn" id="sortCntAsc"  onclick="setSort('cnt','asc')">数量 少→多</button>
+    <button class="sbtn" id="sortSumDesc" onclick="setSort('sum','desc')">金額 高→低</button>
+    <button class="sbtn" id="sortSumAsc"  onclick="setSort('sum','asc')">金額 低→高</button>
+  </div>
+  <div id="list" class="loading">読み込み中...</div>
+</div>
+
+<script>
+// ★★★ 必ず自分のデプロイURLに書き換えること ★★★
+const GAS_URL    = 'https://script.google.com/macros/s/【light_app.gsのデプロイID】/exec';
+const BROWSE_URL  = 'https://roku-web.github.io/【回覧アプリのパス】/'; // 回覧アプリ側
+
+let ALL_ITEMS = [];
+let selCat = null, selType = null;
+let sortKey = 'cnt', sortDir = 'desc';
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── JSONP通信 ──────────────────────────────
+function gasCall(fn, payload, cb) {
+  const cbName = 'cb_' + fn + '_' + Date.now();
+  window[cbName] = function(res) {
+    delete window[cbName];
+    document.getElementById('sc_' + cbName)?.remove();
+    cb(res);
+  };
+  const params = new URLSearchParams({ fn, payload: JSON.stringify(payload||{}), callback: cbName });
+  const script = document.createElement('script');
+  script.id  = 'sc_' + cbName;
+  script.src = GAS_URL + '?' + params.toString();
+  document.body.appendChild(script);
+}
+
+// ── 購入金額合計に応じた文字色クラス（browse_appのbuyTotalColorClassと同一ロジック）
+function buyColorClass(sum) {
+  if (sum >= 15000) return 'pbuy-c3';
+  if (sum >= 10000) return 'pbuy-c2';
+  if (sum >= 5000)  return 'pbuy-c1';
+  return 'pbuy-c0';
+}
+
+// ── 利益率バッジ（browse_appのpbadge()と同一ロジック。B案：40/60%全体に同色）
+function profitBadge(g) {
+  if (g.profitType === null) return '';
+  if (g.profitName === null) {
+    return `<span class="pno">-/${g.profitType.toFixed(1)}%</span>`;
+  }
+  const up = g.profitName >= g.profitType;
+  const cl = up ? 'pu' : 'pd';
+  return `<span class="${cl}">${g.profitName.toFixed(1)}/${g.profitType.toFixed(1)}%</span>`;
+}
+
+const STATUS_LIST = ['在庫','検品済','保品','No有','出タイ待','出品'];
+const STATUS_ABBR = {'在庫':'在','検品済':'検','保品':'保','No有':'N','出タイ待':'待','出品':'出'};
+
+// ── 商品名でグルーピングして集計 ──────────────────────────
+function buildGroups(items) {
+  const grps = {};
+  items.forEach(p => {
+    if (!grps[p.name]) {
+      grps[p.name] = { name:p.name, cat:p.cat, type:p.type, items:[], sum:0,
+                        profitType:p.profitType, profitName:p.profitName,
+                        statusCount:{} };
+      STATUS_LIST.forEach(s => grps[p.name].statusCount[s] = 0);
+    }
+    const g = grps[p.name];
+    g.items.push(p);
+    g.sum += Number(p.buyPrice)||0;
+    if (STATUS_LIST.includes(p.status)) g.statusCount[p.status]++;
+  });
+  return Object.values(grps).map(g => ({ ...g, cnt: g.items.length }));
+}
+
+// ── フィルタ適用 ──────────────────────────
+function filteredItems() {
+  return ALL_ITEMS.filter(p =>
+    (!selCat  || p.cat  === selCat) &&
+    (!selType || p.type === selType)
+  );
+}
+
+// ── ヘッダーの絞り込みボタン（カテゴリー→タイプ、動的に件数＋金額） ──
+function renderFilterRow() {
+  const row = document.getElementById('filterRow');
+  let h = '';
+  if (selCat) {
+    // タイプ選択中：カテゴリー内のタイプ一覧を表示
+    const types = {};
+    ALL_ITEMS.filter(p => p.cat === selCat).forEach(p => {
+      if (!p.type) return;
+      if (!types[p.type]) types[p.type] = {cnt:0, sum:0};
+      types[p.type].cnt++;
+      types[p.type].sum += Number(p.buyPrice)||0;
+    });
+    h += `<button class="fclear" onclick="selCat=null;selType=null;render();">← ${esc(selCat)}</button>`;
+    Object.entries(types).forEach(([t, v]) => {
+      const sl = (t === selType) ? 'sl' : '';
+      h += `<button class="fbtn ${sl}" onclick="selType=(selType==='${esc(t)}'?null:'${esc(t)}');render();">${esc(t)}<span class="fb-amt">(${v.cnt}個 ¥${v.sum.toLocaleString('ja-JP')})</span></button>`;
+    });
+  } else {
+    // カテゴリー一覧を表示
+    const cats = {};
+    ALL_ITEMS.forEach(p => {
+      if (!p.cat) return;
+      if (!cats[p.cat]) cats[p.cat] = {cnt:0, sum:0};
+      cats[p.cat].cnt++;
+      cats[p.cat].sum += Number(p.buyPrice)||0;
+    });
+    Object.entries(cats).forEach(([c, v]) => {
+      h += `<button class="fbtn" onclick="selCat='${esc(c)}';render();">${esc(c)}<span class="fb-amt">(${v.cnt}個 ¥${v.sum.toLocaleString('ja-JP')})</span></button>`;
+    });
+  }
+  row.innerHTML = h;
+}
+
+// ── ソート切替 ──────────────────────────
+function setSort(key, dir) {
+  sortKey = key; sortDir = dir;
+  render();
+}
+function updateSortBtnState() {
+  ['sortCntDesc','sortCntAsc','sortSumDesc','sortSumAsc'].forEach(id => document.getElementById(id).classList.remove('sl'));
+  const id = 'sort' + (sortKey==='cnt'?'Cnt':'Sum') + (sortDir==='desc'?'Desc':'Asc');
+  document.getElementById(id).classList.add('sl');
+}
+
+// ── カード1件分のHTML ──────────────────────────
+function cardHtml(g, idx, total) {
+  const stHtml = STATUS_LIST.map(s => `<span class="st-item">[${STATUS_ABBR[s]}]${String(g.statusCount[s]).padStart(2,'0')}</span>`).join('');
+  const linkUrl = BROWSE_URL + '?name=' + encodeURIComponent(g.name);
+  return `<div class="card">
+    <div class="row1">
+      <span class="gn">${esc(g.name)}</span>
+      <span class="row1-r"><span class="gc">${g.cnt}個</span> <a class="link-btn" href="${linkUrl}" target="_blank" title="回覧アプリで詳細を見る">→</a></span>
+    </div>
+    <div class="row2">
+      <span class="buy ${buyColorClass(g.sum)}">¥${Math.round(g.sum).toLocaleString('ja-JP')}</span>
+      ${profitBadge(g)}
+      <span class="seq">${String(idx+1).padStart(2,'0')}/${String(total).padStart(2,'0')}</span>
+    </div>
+    <div class="row3">${stHtml}</div>
+  </div>`;
+}
+
+// ── メイン描画 ──────────────────────────
+function render() {
+  renderFilterRow();
+  updateSortBtnState();
+
+  const groups = buildGroups(filteredItems());
+  groups.sort((a,b) => {
+    const av = sortKey==='cnt' ? a.cnt : a.sum;
+    const bv = sortKey==='cnt' ? b.cnt : b.sum;
+    return sortDir==='desc' ? bv-av : av-bv;
+  });
+
+  document.getElementById('hcnt').textContent = groups.length + '件表示中';
+
+  const list = document.getElementById('list');
+  if (groups.length === 0) {
+    list.className = 'empty';
+    list.textContent = '該当する商品がありません';
+    return;
+  }
+  list.className = '';
+  list.innerHTML = groups.map((g,i) => cardHtml(g, i, groups.length)).join('');
+}
+
+// ── 初期化 ──────────────────────────
+function init() {
+  gasCall('getLightItems', {}, res => {
+    if (!res || !res.ok) {
+      document.getElementById('list').textContent = 'データ取得に失敗しました';
+      return;
+    }
+    ALL_ITEMS = res.items;
+    render();
+  });
+}
+init();
+</script>
+</body>
+</html>
