@@ -58,10 +58,12 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .bn{font-size:13px;font-weight:700;padding:16px 2px;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;text-align:center;font-family:inherit;line-height:1.3;}
 .bn.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;}
 
-/* ── オーバーレイ・パネル共通(カテゴリー／並び順) ── */
-#ov{position:absolute;left:0;right:0;top:0;bottom:var(--bot-h,70px);background:rgba(0,0,0,.45);z-index:9;display:none;}
+/* ── オーバーレイ・パネル共通(カテゴリー／並び順)
+     位置はCSSのvh/dvh計算に依存せず、JS側でgetBoundingClientRect()を用いて
+     常に#botの実際の画面座標に同期させる（position:fixedで直接pxを指定） ── */
+#ov{position:fixed;background:rgba(0,0,0,.45);z-index:9;display:none;}
 #ov.op{display:block;}
-#pn{position:absolute;bottom:var(--bot-h,70px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,70px)));transition:transform .27s cubic-bezier(.32,.72,0,1),bottom 0s;z-index:10;max-height:calc(100% - var(--bot-h,70px) - 14px);display:flex;flex-direction:column;overflow:hidden;}
+#pn{position:fixed;background:#fff;border-radius:14px 14px 0 0;transform:translateY(100%);transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;display:flex;flex-direction:column;overflow:hidden;}
 #pn.op{transform:translateY(0);}
 .ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;background:#74d1fa;flex-shrink:0;}
 .pt{font-size:15px;font-weight:700;color:#111;}
@@ -332,8 +334,10 @@ function openPanel(name) {
   curP = name;
   if (name === 'category') buildCategoryPanel(true);
   else if (name === 'sort') buildSortPanel(true);
+  syncPanelPosition();
   document.getElementById('pn').classList.add('op');
   document.getElementById('ov').classList.add('op');
+  if (!panelSyncRaf) startPanelSyncLoop();
 }
 function closeP() {
   document.getElementById('pn').classList.remove('op');
@@ -419,18 +423,49 @@ function render() {
   list.innerHTML = groups.map((g,i) => cardHtml(g, i, groups.length)).join('');
 }
 
-// ── ボトムパネルの実高さを常時監視し、パネル位置に反映（ResizeObserverでレイアウト変化に自動追従） ──
-function setBotHeight() {
-  const h = document.getElementById('bot').offsetHeight;
-  if (h > 0) document.getElementById('wrap').style.setProperty('--bot-h', h + 'px');
+// ── パネル位置の同期：#wrap・#botの実座標を毎回計算し、#ov/#pnにpxで直接反映 ──
+// （vh/dvhのブラウザ間差異やアドレスバー表示変化の影響を受けないようにするため）
+function syncPanelPosition() {
+  const wrap = document.getElementById('wrap');
+  const bot  = document.getElementById('bot');
+  const ov   = document.getElementById('ov');
+  const pn   = document.getElementById('pn');
+  const wrapRect = wrap.getBoundingClientRect();
+  const botRect  = bot.getBoundingClientRect();
+
+  ov.style.left   = wrapRect.left + 'px';
+  ov.style.width  = wrapRect.width + 'px';
+  ov.style.top    = wrapRect.top + 'px';
+  ov.style.height = Math.max(0, botRect.top - wrapRect.top) + 'px';
+
+  pn.style.left      = wrapRect.left + 'px';
+  pn.style.width     = wrapRect.width + 'px';
+  pn.style.bottom    = Math.max(0, window.innerHeight - botRect.top) + 'px';
+  pn.style.maxHeight = Math.max(0, botRect.top - wrapRect.top - 14) + 'px';
 }
-function initBotHeightWatcher() {
-  setBotHeight();
-  if (window.ResizeObserver) {
-    new ResizeObserver(setBotHeight).observe(document.getElementById('bot'));
+
+let panelSyncRaf = null;
+// パネルが開いている間は毎フレーム同期し続ける（アドレスバーの出入り等、途中の変化にも追従するため）
+function startPanelSyncLoop() {
+  syncPanelPosition();
+  if (document.getElementById('pn').classList.contains('op')) {
+    panelSyncRaf = requestAnimationFrame(startPanelSyncLoop);
+  } else {
+    panelSyncRaf = null;
   }
-  window.addEventListener('resize', setBotHeight);
-  window.addEventListener('orientationchange', setBotHeight);
+}
+function initPanelSyncWatchers() {
+  syncPanelPosition();
+  window.addEventListener('resize', syncPanelPosition);
+  window.addEventListener('orientationchange', syncPanelPosition);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncPanelPosition);
+    window.visualViewport.addEventListener('scroll', syncPanelPosition);
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(syncPanelPosition).observe(document.getElementById('bot'));
+    new ResizeObserver(syncPanelPosition).observe(document.getElementById('wrap'));
+  }
 }
 
 // ── 初期化 ──────────────────────────
@@ -442,7 +477,7 @@ function init() {
       return;
     }
     ALL_ITEMS = res.items;
-    initBotHeightWatcher();
+    initPanelSyncWatchers();
     updSortBtn();
     render();
   });
