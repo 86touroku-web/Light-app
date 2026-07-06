@@ -19,8 +19,14 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 #hdr-sub{color:#ffffff;font-size:15px;font-weight:800;}
 #hdr-c{color:#ffffff;font-size:15px;font-weight:800;white-space:nowrap;}
 
+/* ── ローディング画面（データ取得完了までは一覧・ボタン共に表示しない） ── */
+#loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+#loading p{font-size:13px;color:#444;font-weight:600;}
+.spinner{width:36px;height:36px;border:4px solid #cfd8dc;border-top-color:#3845fd;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
 /* ── リスト ── */
-#list{flex:1;overflow-y:auto;padding:6px 6px 4px;}
+#list{flex:1;overflow-y:auto;padding:6px 6px 4px;display:none;}
 .emptyhint{text-align:center;color:#888;font-size:13px;padding:40px 16px;line-height:1.6;}
 .noresult{padding:24px;text-align:center;font-size:13px;color:#444;font-weight:600;}
 
@@ -50,20 +56,19 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .st-item{margin-right:6px;}
 .link-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ff5208;color:#fff;font-size:13px;font-weight:900;text-decoration:none;line-height:1;flex-shrink:0;}
 
-.loading{text-align:center;color:#888;font-size:13px;padding:30px 0;}
-
-/* ── ボトムコントロールパネル ── */
-#bot{background:#fff;border-top:1px solid #ccc;padding:6px 6px 8px;flex-shrink:0;}
+/* ── ボトムコントロールパネル（データ取得完了まで非表示） ── */
+#bot{background:#fff;border-top:1px solid #ccc;padding:6px 6px 8px;flex-shrink:0;display:none;}
 #btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;}
 .bn{font-size:13px;font-weight:700;padding:16px 2px;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;text-align:center;font-family:inherit;line-height:1.3;}
 .bn.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;}
 
 /* ── オーバーレイ・パネル共通(カテゴリー／並び順)
-     位置はCSSのvh/dvh計算に依存せず、JS側でgetBoundingClientRect()を用いて
-     常に#botの実際の画面座標に同期させる（position:fixedで直接pxを指定） ── */
-#ov{position:fixed;background:rgba(0,0,0,.45);z-index:9;display:none;}
+     ★browse_index_v19と同じ実績のある方式：
+     position:absolute + CSS変数 --bot-h（#botの実高さを1回測定するだけ）
+     で#wrap内に静的配置する。JSで毎フレーム座標計算するfixed方式はやめた。 ── */
+#ov{position:absolute;left:0;right:0;top:0;bottom:var(--bot-h,96px);background:rgba(0,0,0,.45);z-index:9;display:none;}
 #ov.op{display:block;}
-#pn{position:fixed;background:#fff;border-radius:14px 14px 0 0;transform:translateY(100%);transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;display:flex;flex-direction:column;overflow:hidden;}
+#pn{position:absolute;bottom:var(--bot-h,96px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,96px)));transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;max-height:calc(100% - var(--bot-h,96px) - 14px);display:flex;flex-direction:column;}
 #pn.op{transform:translateY(0);}
 .ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;background:#74d1fa;flex-shrink:0;}
 .pt{font-size:15px;font-weight:700;color:#111;}
@@ -79,11 +84,6 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .pr2.sl .plc{color:#0010cc;font-weight:700;}
 #type-section{display:none;margin-top:8px;}
 #type-section.show{display:block;}
-
-/* ── パネル内ローディング（データ未取得時） ── */
-.panel-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;color:#666;font-size:13px;gap:12px;}
-.spinner{width:28px;height:28px;border:3px solid #d8e0de;border-top-color:#3845fd;border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -91,11 +91,19 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 <div id="app">
   <div id="hdr">
     <span id="hdr-sub">ルアー在庫 軽量ランキング</span>
-    <span id="hdr-c">00 件</span>
+    <span id="hdr-c">読込中…</span>
   </div>
 
-  <div id="list" class="loading">読み込み中...</div>
+  <!-- ローディング画面（データ取得完了後にlist/botへ切り替え） -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p id="load-msg">在庫データを読み込み中…</p>
+  </div>
 
+  <!-- カードリスト（ロード後に表示） -->
+  <div id="list"></div>
+
+  <!-- ボトムコントロール（ロード後に表示） -->
   <div id="bot">
     <div id="btns">
       <button class="bn" onclick="clrAll()">✕<br>クリア</button>
@@ -122,7 +130,6 @@ const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxYkNsXrKwaI49xu292E
 const BROWSE_URL = 'https://86touroku-web.github.io/Browse/browse_index.html'; // 回覧アプリ側
 
 let ALL_ITEMS = [];
-let DATA_READY = false; // getLightItemsの応答が届くまではfalse（パネルはローディング表示にする）
 
 // 確定済みフィルター（「表示」ボタンで確定するまでは一覧に反映されない）
 let F = { category: null, type: null, sortKey: null, sortDir: null, confirmed: false };
@@ -155,6 +162,11 @@ function gasCall(fn, payload, cb) {
   const script = document.createElement('script');
   script.id  = 'sc_' + cbName;
   script.src = GAS_URL + '?' + params.toString();
+  script.onerror = function() {
+    delete window[cbName];
+    document.getElementById('sc_' + cbName)?.remove();
+    cb({ ok:false, error:'通信に失敗しました（ネットワークまたはデプロイURLをご確認ください）' });
+  };
   document.body.appendChild(script);
 }
 
@@ -244,11 +256,6 @@ function buildCategoryPanel(init) {
   if (init) { selCat = F.category; selType = F.type; }
   document.getElementById('pt').textContent = 'カテゴリー・タイプ';
 
-  if (!DATA_READY) {
-    document.getElementById('pc').innerHTML = '<div class="panel-loading"><div class="spinner"></div><div>読み込み中です…</div></div>';
-    return;
-  }
-
   const cats = {};
   ALL_ITEMS.forEach(p => {
     if (!p.cat) return;
@@ -306,12 +313,6 @@ function selTypeItem(tp) {
 function buildSortPanel(init) {
   if (init) { selSortKey = F.sortKey; selSortDir = F.sortDir; }
   document.getElementById('pt').textContent = '並び順';
-
-  if (!DATA_READY) {
-    document.getElementById('pc').innerHTML = '<div class="panel-loading"><div class="spinner"></div><div>読み込み中です…</div></div>';
-    return;
-  }
-
   let h = '';
   SORT_ROWS.forEach(r => {
     const cur = selSortKey === r.key && selSortDir === r.dir;
@@ -351,10 +352,8 @@ function openPanel(name) {
   curP = name;
   if (name === 'category') buildCategoryPanel(true);
   else if (name === 'sort') buildSortPanel(true);
-  syncPanelPosition();
   document.getElementById('pn').classList.add('op');
   document.getElementById('ov').classList.add('op');
-  if (!panelSyncRaf) startPanelSyncLoop();
 }
 function closeP() {
   document.getElementById('pn').classList.remove('op');
@@ -440,67 +439,34 @@ function render() {
   list.innerHTML = groups.map((g,i) => cardHtml(g, i, groups.length)).join('');
 }
 
-// ── パネル位置の同期：#wrap・#botの実座標を毎回計算し、#ov/#pnにpxで直接反映 ──
-// （vh/dvhのブラウザ間差異やアドレスバー表示変化の影響を受けないようにするため）
-function syncPanelPosition() {
-  const wrap = document.getElementById('wrap');
-  const bot  = document.getElementById('bot');
-  const ov   = document.getElementById('ov');
-  const pn   = document.getElementById('pn');
-  const wrapRect = wrap.getBoundingClientRect();
-  const botRect  = bot.getBoundingClientRect();
-
-  ov.style.left   = wrapRect.left + 'px';
-  ov.style.width  = wrapRect.width + 'px';
-  ov.style.top    = wrapRect.top + 'px';
-  ov.style.height = Math.max(0, botRect.top - wrapRect.top) + 'px';
-
-  pn.style.left      = wrapRect.left + 'px';
-  pn.style.width     = wrapRect.width + 'px';
-  pn.style.bottom    = Math.max(0, window.innerHeight - botRect.top) + 'px';
-  pn.style.maxHeight = Math.max(0, botRect.top - wrapRect.top - 14) + 'px';
-}
-
-let panelSyncRaf = null;
-// パネルが開いている間は毎フレーム同期し続ける（アドレスバーの出入り等、途中の変化にも追従するため）
-function startPanelSyncLoop() {
-  syncPanelPosition();
-  if (document.getElementById('pn').classList.contains('op')) {
-    panelSyncRaf = requestAnimationFrame(startPanelSyncLoop);
-  } else {
-    panelSyncRaf = null;
-  }
-}
-function initPanelSyncWatchers() {
-  syncPanelPosition();
-  window.addEventListener('resize', syncPanelPosition);
-  window.addEventListener('orientationchange', syncPanelPosition);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', syncPanelPosition);
-    window.visualViewport.addEventListener('scroll', syncPanelPosition);
-  }
-  if (window.ResizeObserver) {
-    new ResizeObserver(syncPanelPosition).observe(document.getElementById('bot'));
-    new ResizeObserver(syncPanelPosition).observe(document.getElementById('wrap'));
-  }
+// ── ボトムコントロールパネルの実高さを測定し、CSS変数に反映
+//     （詳細選択パネル #pn / オーバーレイ #ov がこの高さの上で止まるようにする）
+//     ★browse_index_v19と同じ方式。fixed座標のrAFループは使わない ──
+function setBotHeight() {
+  const h = document.getElementById('bot').offsetHeight;
+  if (h > 0) document.getElementById('wrap').style.setProperty('--bot-h', h + 'px');
 }
 
 // ── 初期化 ──────────────────────────
 function init() {
   gasCall('getLightItems', {}, res => {
     if (!res || !res.ok) {
-      document.getElementById('list').className = 'noresult';
-      document.getElementById('list').textContent = 'データ取得に失敗しました';
+      document.getElementById('load-msg').textContent = 'データ取得に失敗しました' + (res && res.error ? '（' + res.error + '）' : '');
+      document.querySelector('#loading .spinner').style.display = 'none';
       return;
     }
     ALL_ITEMS = res.items;
-    DATA_READY = true;
-    initPanelSyncWatchers();
+
+    // データ取得完了 → ローディングを隠し、一覧・ボトムバーを表示
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('list').style.display    = 'block';
+    document.getElementById('bot').style.display     = 'block';
+
+    setBotHeight();
+    window.addEventListener('resize', setBotHeight);
+
     updSortBtn();
     render();
-    // データ到着前にパネルを開いていた場合、ローディング表示から実データ表示へ更新
-    if (curP === 'category') buildCategoryPanel(true);
-    else if (curP === 'sort') buildSortPanel(true);
   });
 }
 init();
