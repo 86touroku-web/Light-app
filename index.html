@@ -61,7 +61,7 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 /* ── オーバーレイ・パネル共通(カテゴリー／並び順) ── */
 #ov{position:absolute;left:0;right:0;top:0;bottom:var(--bot-h,70px);background:rgba(0,0,0,.45);z-index:9;display:none;}
 #ov.op{display:block;}
-#pn{position:absolute;bottom:var(--bot-h,70px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,70px)));transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;max-height:calc(100% - var(--bot-h,70px) - 14px);display:flex;flex-direction:column;overflow:hidden;}
+#pn{position:absolute;bottom:var(--bot-h,70px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,70px)));transition:transform .27s cubic-bezier(.32,.72,0,1),bottom 0s;z-index:10;max-height:calc(100% - var(--bot-h,70px) - 14px);display:flex;flex-direction:column;overflow:hidden;}
 #pn.op{transform:translateY(0);}
 .ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;background:#74d1fa;flex-shrink:0;}
 .pt{font-size:15px;font-weight:700;color:#111;}
@@ -117,11 +117,11 @@ const BROWSE_URL = 'https://86touroku-web.github.io/Browse/browse_index.html'; /
 let ALL_ITEMS = [];
 
 // 確定済みフィルター（「表示」ボタンで確定するまでは一覧に反映されない）
-let F = { category: null, type: null, sortKey: 'cnt', sortDir: 'desc', confirmed: false };
+let F = { category: null, type: null, sortKey: null, sortDir: null, confirmed: false };
 
 // パネル編集中の一時選択（パネル切替時／「表示」ボタン押下時にFへ反映）
 let selCat = null, selType = null;
-let selSortKey = 'cnt', selSortDir = 'desc';
+let selSortKey = null, selSortDir = null;  // null = 未選択（既定の並び順を使用）
 
 // 現在開いているパネル名（'category' | 'sort' | null）
 let curP = null;
@@ -219,15 +219,16 @@ function updCategoryBtn() {
   btn.textContent = F.type || F.category || 'カテゴリー';
 }
 
-// ── 並び順ボタンの見た目更新（選択中は反転＋ラベル差替え） ──
+// ── 並び順ボタンの見た目更新（選択中は反転＋ラベル差替え、未選択なら既定表示） ──
 function sortLabel(key, dir) {
   const row = SORT_ROWS.find(r => r.key===key && r.dir===dir);
   return row ? row.label : '並び順';
 }
 function updSortBtn() {
   const btn = document.getElementById('btnSort');
-  btn.classList.add('pr');
-  btn.textContent = sortLabel(F.sortKey, F.sortDir);
+  const active = !!F.sortKey;
+  btn.classList.toggle('pr', active);
+  btn.textContent = active ? sortLabel(F.sortKey, F.sortDir) : '並び順';
 }
 
 // ── カテゴリー・タイプパネル構築（既存回覧アプリのbuildCategoryPanelと同一ロジック＋金額表示） ──
@@ -300,7 +301,12 @@ function buildSortPanel(init) {
   document.getElementById('pc').innerHTML = h;
 }
 function selSortItem(key, dir) {
-  selSortKey = key; selSortDir = dir;
+  if (selSortKey === key && selSortDir === dir) {
+    // 同じ項目を再タップ→選択解除（既存回覧アプリのselectSortと同一ロジック）
+    selSortKey = null; selSortDir = null;
+  } else {
+    selSortKey = key; selSortDir = dir;
+  }
   buildSortPanel(false);
 }
 
@@ -345,9 +351,9 @@ function applyShow() {
 
 // ── 「クリア」ボタン：既存回覧アプリのclrAllと同一ロジック ──
 function clrAll() {
-  F = { category:null, type:null, sortKey:'cnt', sortDir:'desc', confirmed:false };
+  F = { category:null, type:null, sortKey:null, sortDir:null, confirmed:false };
   selCat = null; selType = null;
-  selSortKey = 'cnt'; selSortDir = 'desc';
+  selSortKey = null; selSortDir = null;
   curP = null;
   closeP();
   updCategoryBtn();
@@ -394,10 +400,12 @@ function render() {
   }
 
   const groups = buildGroups(filteredItems());
+  const sk = F.sortKey || 'cnt';
+  const sd = F.sortDir || 'desc';
   groups.sort((a,b) => {
-    const av = F.sortKey==='cnt' ? a.cnt : a.sum;
-    const bv = F.sortKey==='cnt' ? b.cnt : b.sum;
-    return (F.sortDir==='desc' || F.sortDir==='high') ? bv-av : av-bv;
+    const av = sk==='cnt' ? a.cnt : a.sum;
+    const bv = sk==='cnt' ? b.cnt : b.sum;
+    return (sd==='desc' || sd==='high') ? bv-av : av-bv;
   });
 
   document.getElementById('hdr-c').textContent = String(groups.length).padStart(2,'0') + ' 件';
@@ -411,10 +419,18 @@ function render() {
   list.innerHTML = groups.map((g,i) => cardHtml(g, i, groups.length)).join('');
 }
 
-// ── ボトムパネルの実高さを測定し、パネル位置に反映 ──
+// ── ボトムパネルの実高さを常時監視し、パネル位置に反映（ResizeObserverでレイアウト変化に自動追従） ──
 function setBotHeight() {
   const h = document.getElementById('bot').offsetHeight;
   if (h > 0) document.getElementById('wrap').style.setProperty('--bot-h', h + 'px');
+}
+function initBotHeightWatcher() {
+  setBotHeight();
+  if (window.ResizeObserver) {
+    new ResizeObserver(setBotHeight).observe(document.getElementById('bot'));
+  }
+  window.addEventListener('resize', setBotHeight);
+  window.addEventListener('orientationchange', setBotHeight);
 }
 
 // ── 初期化 ──────────────────────────
@@ -426,8 +442,7 @@ function init() {
       return;
     }
     ALL_ITEMS = res.items;
-    setBotHeight();
-    window.addEventListener('resize', setBotHeight);
+    initBotHeightWatcher();
     updSortBtn();
     render();
   });
