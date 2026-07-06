@@ -9,80 +9,131 @@
    ★GAS_URL・BROWSE_URLは必ず自分のデプロイURLに書き換えること
    ══════════════════════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{width:100%;background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;}
-#wrap{max-width:480px;margin:0 auto;}
+html,body{height:100%;}
+body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;overflow:hidden;}
+#wrap{position:relative;width:100%;max-width:480px;margin:0 auto;height:100vh;height:100dvh;overflow:hidden;}
+#app{width:100%;height:100%;background:#f0f4f3;display:flex;flex-direction:column;}
 
-/* ── ヘッダー（回覧アプリと同じ発想：絞り込みバー＋件数表示） ── */
-.hdr{position:sticky;top:0;z-index:10;background:#1a6b3c;color:#fff;padding:8px 10px;}
-.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
-.hdr-title{font-size:15px;font-weight:800;}
-.hdr-cnt{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
-.filter-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
-.filter-row::-webkit-scrollbar{display:none;}
-.fbtn{flex:0 0 auto;background:#ffffff;color:#1a5f4a;border:none;border-radius:14px;padding:5px 10px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;}
-.fbtn.sl{background:#ec1c24;color:#fff;}
-.fbtn .fb-amt{font-weight:600;color:#666;margin-left:2px;}
-.fbtn.sl .fb-amt{color:#fff;}
-.fclear{flex:0 0 auto;background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:14px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+/* ── ヘッダー（紺色） ── */
+#hdr{background:#3845fd;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#hdr-sub{color:#ffffff;font-size:15px;font-weight:800;}
+#hdr-c{color:#ffffff;font-size:15px;font-weight:800;white-space:nowrap;}
 
-/* ── ソートバー ── */
-.sort-row{display:flex;gap:6px;padding:6px 10px;background:#e8f0ee;}
-.sbtn{flex:1;background:#ffffff;border:1px solid #cfd8dc;border-radius:8px;padding:5px 4px;font-size:11px;font-weight:700;color:#1a5f4a;cursor:pointer;}
-.sbtn.sl{background:#1a5f4a;color:#fff;border-color:#1a5f4a;}
+/* ── リスト ── */
+#list{flex:1;overflow-y:auto;padding:6px 6px 4px;}
+.emptyhint{text-align:center;color:#888;font-size:13px;padding:40px 16px;line-height:1.6;}
+.noresult{padding:24px;text-align:center;font-size:13px;color:#444;font-weight:600;}
 
 /* ── 商品名グループカード（3行構成） ── */
 .card{display:flex;flex-direction:column;padding:8px 12px;margin:6px 8px;background:#ffffff;border-radius:9px;border:1.5px solid #cfd8dc;gap:3px;}
 
-.row1{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.row1{display:flex;align-items:baseline;justify-content:space-between;gap:6px;}
 .gn{font-size:15px;font-weight:700;color:#1a5f4a;line-height:1.3;flex:1 1 auto;min-width:0;overflow-wrap:break-word;word-break:break-word;}
-.row1-r{display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;padding-top:1px;}
-.gc{font-size:12px;font-weight:700;color:#111;}
-.link-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#1a6b3c;color:#fff;font-size:12px;font-weight:900;text-decoration:none;line-height:1;flex-shrink:0;}
+.gc{font-size:13px;font-weight:700;color:#111;flex-shrink:0;white-space:nowrap;}
 
-.row2{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;flex-wrap:wrap;}
+.row2{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;}
+.lbl-buy{color:#3845fd;}
 .buy{white-space:nowrap;}
 .pbuy-c0{color:#000000;}
 .pbuy-c1{color:#00a8f3;}
 .pbuy-c2{color:#11db4a;}
 .pbuy-c3{color:#ec1c24;}
+.lbl-profit{color:#ff31d2;margin-left:4px;}
 .pu{color:#ff31d2;white-space:nowrap;}
 .pd{color:#000000;white-space:nowrap;}
 .pno{color:#1a5f4a;white-space:nowrap;}
-.seq{font-size:10px;color:#000000;font-weight:600;white-space:nowrap;margin-left:auto;}
+.seq{font-size:14px;font-weight:700;color:#000000;white-space:nowrap;margin-left:auto;flex-shrink:0;}
 
-.row3{font-size:12px;font-weight:700;color:#111;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.row3::-webkit-scrollbar{display:none;}
+.row3{display:flex;align-items:center;gap:6px;}
+.st-wrap{font-size:12px;font-weight:700;color:#111;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-width:0;}
+.st-wrap::-webkit-scrollbar{display:none;}
 .st-item{margin-right:6px;}
+.link-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#ff5208;color:#fff;font-size:13px;font-weight:900;text-decoration:none;line-height:1;flex-shrink:0;}
 
-.loading,.empty{text-align:center;color:#888;font-size:13px;padding:30px 0;}
+.loading{text-align:center;color:#888;font-size:13px;padding:30px 0;}
+
+/* ── ボトムコントロールパネル ── */
+#bot{background:#fff;border-top:1px solid #ccc;padding:6px 6px 8px;flex-shrink:0;}
+#btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;}
+.bn{font-size:13px;font-weight:700;padding:16px 2px;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;text-align:center;font-family:inherit;line-height:1.3;}
+.bn.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;}
+
+/* ── オーバーレイ・パネル共通(カテゴリー／並び順)
+     位置はCSSのvh/dvh計算に依存せず、JS側でgetBoundingClientRect()を用いて
+     常に#botの実際の画面座標に同期させる（position:fixedで直接pxを指定） ── */
+#ov{position:fixed;background:rgba(0,0,0,.45);z-index:9;display:none;}
+#ov.op{display:block;}
+#pn{position:fixed;background:#fff;border-radius:14px 14px 0 0;transform:translateY(100%);transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;display:flex;flex-direction:column;overflow:hidden;}
+#pn.op{transform:translateY(0);}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;background:#74d1fa;flex-shrink:0;}
+.pt{font-size:15px;font-weight:700;color:#111;}
+.pc{font-size:13px;color:#333;cursor:pointer;border:none;background:none;font-family:inherit;font-weight:600;}
+.pl{overflow-y:auto;padding:6px 9px;flex:1;}
+.sec-label{font-size:11px;color:#555;font-weight:700;padding:6px 2px 3px;border-bottom:1px solid #ddd;margin-bottom:4px;}
+.pr2{display:flex;justify-content:space-between;align-items:center;padding:10px 11px;border-radius:8px;margin-bottom:3px;cursor:pointer;background:#f0f2f1;gap:8px;}
+.pr2.sl{background:#e0f2fc;border:1.5px solid #1d24ed;}
+.pr2 .pln{font-size:12px;color:#111;font-weight:600;flex:1 1 auto;min-width:0;}
+.pr2.sl .pln{color:#0010cc;font-weight:800;}
+.pr2 .pamt{font-size:12px;color:#ff5208;font-weight:700;white-space:nowrap;}
+.pr2 .plc{font-size:11px;color:#555;font-weight:600;white-space:nowrap;}
+.pr2.sl .plc{color:#0010cc;font-weight:700;}
+#type-section{display:none;margin-top:8px;}
+#type-section.show{display:block;}
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div class="hdr">
-    <div class="hdr-top">
-      <span class="hdr-title">ルアー在庫 軽量ランキング</span>
-      <span class="hdr-cnt" id="hcnt">0件表示中</span>
-    </div>
-    <div class="filter-row" id="filterRow"></div>
+<div id="app">
+  <div id="hdr">
+    <span id="hdr-sub">ルアー在庫 軽量ランキング</span>
+    <span id="hdr-c">00 件</span>
   </div>
-  <div class="sort-row">
-    <button class="sbtn" id="sortCntDesc" onclick="setSort('cnt','desc')">数量 多→少</button>
-    <button class="sbtn" id="sortCntAsc"  onclick="setSort('cnt','asc')">数量 少→多</button>
-    <button class="sbtn" id="sortSumDesc" onclick="setSort('sum','desc')">金額 高→低</button>
-    <button class="sbtn" id="sortSumAsc"  onclick="setSort('sum','asc')">金額 低→高</button>
-  </div>
+
   <div id="list" class="loading">読み込み中...</div>
+
+  <div id="bot">
+    <div id="btns">
+      <button class="bn" onclick="clrAll()">✕<br>クリア</button>
+      <button class="bn" id="btnCategory" onclick="openPanel('category')">カテゴリー</button>
+      <button class="bn" onclick="applyShow()">表示</button>
+      <button class="bn" id="btnSort" onclick="openPanel('sort')">並び順</button>
+    </div>
+  </div>
+</div>
+
+<div id="ov" onclick="closeP()"></div>
+<div id="pn">
+  <div class="ph">
+    <span class="pt" id="pt">カテゴリー・タイプ</span>
+    <button class="pc" onclick="closeP()">✕ 閉じる</button>
+  </div>
+  <div class="pl" id="pc"></div>
+</div>
 </div>
 
 <script>
 // ★★★ 必ず自分のデプロイURLに書き換えること ★★★
-const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxYkNsXrKwaI49xu292E4a_CeP3kOTnou8hN13CWvSSJzTYum-SrZRYvJsYu6XxLqGwCg/exec';
-const BROWSE_URL  = 'https://86touroku-web.github.io/Browse/browse_index.html'; // 回覧アプリ側
+const GAS_URL    = 'https://script.google.com/macros/s/AKfycbyV5NXK_4Lv5DfSDJfRXA5l1LlRISqa9TsGrGQi95Baq_tbCLx3j5pawaRSmQnny2-jEQ/exec';
+const BROWSE_URL = 'https://86touroku-web.github.io/Browse/browse_index.html'; // 回覧アプリ側
 
 let ALL_ITEMS = [];
+
+// 確定済みフィルター（「表示」ボタンで確定するまでは一覧に反映されない）
+let F = { category: null, type: null, sortKey: null, sortDir: null, confirmed: false };
+
+// パネル編集中の一時選択（パネル切替時／「表示」ボタン押下時にFへ反映）
 let selCat = null, selType = null;
-let sortKey = 'cnt', sortDir = 'desc';
+let selSortKey = null, selSortDir = null;  // null = 未選択（既定の並び順を使用）
+
+// 現在開いているパネル名（'category' | 'sort' | null）
+let curP = null;
+
+const SORT_ROWS = [
+  { key:'cnt',   dir:'desc', label:'在庫が多い' },
+  { key:'cnt',   dir:'asc',  label:'在庫が少ない' },
+  { key:'price', dir:'high', label:'金額が高い' },
+  { key:'price', dir:'low',  label:'金額が安い' },
+];
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -109,8 +160,8 @@ function buyColorClass(sum) {
   return 'pbuy-c0';
 }
 
-// ── 利益率バッジ（browse_appのpbadge()と同一ロジック。B案：40/60%全体に同色）
-function profitBadge(g) {
+// ── 利益率バッジ（数値部分のみ動的配色。ラベル「利益率」は常にピンク固定で別途付与）
+function profitValue(g) {
   if (g.profitType === null) return '';
   if (g.profitName === null) {
     return `<span class="pno">-/${g.profitType.toFixed(1)}%</span>`;
@@ -141,57 +192,177 @@ function buildGroups(items) {
   return Object.values(grps).map(g => ({ ...g, cnt: g.items.length }));
 }
 
-// ── フィルタ適用 ──────────────────────────
+// ── 確定済みフィルターに合致する商品 ──────────────────────────
+function passesFilter(p, ov) {
+  ov = ov || {};
+  const category = ov.category !== undefined ? ov.category : F.category;
+  const type     = ov.type     !== undefined ? ov.type     : F.type;
+  if (category && p.cat  !== category) return false;
+  if (type     && p.type !== type)     return false;
+  return true;
+}
 function filteredItems() {
-  return ALL_ITEMS.filter(p =>
-    (!selCat  || p.cat  === selCat) &&
-    (!selType || p.type === selType)
-  );
+  return ALL_ITEMS.filter(p => passesFilter(p, {}));
 }
 
-// ── ヘッダーの絞り込みボタン（カテゴリー→タイプ、動的に件数＋金額） ──
-function renderFilterRow() {
-  const row = document.getElementById('filterRow');
-  let h = '';
+// ── ヘッダー動的テキスト（既存回覧アプリのupdHeaderと同一ロジック） ──
+function updHeader() {
+  const sub = document.getElementById('hdr-sub');
+  if      (F.type)     sub.textContent = F.type;
+  else if (F.category) sub.textContent = F.category;
+  else                  sub.textContent = 'ルアー在庫 軽量ランキング';
+}
+
+// ── カテゴリーボタンの見た目更新（選択中は反転＋ラベル差替え） ──
+function updCategoryBtn() {
+  const btn = document.getElementById('btnCategory');
+  const active = !!(F.category || F.type);
+  btn.classList.toggle('pr', active);
+  btn.textContent = F.type || F.category || 'カテゴリー';
+}
+
+// ── 並び順ボタンの見た目更新（選択中は反転＋ラベル差替え、未選択なら既定表示） ──
+function sortLabel(key, dir) {
+  const row = SORT_ROWS.find(r => r.key===key && r.dir===dir);
+  return row ? row.label : '並び順';
+}
+function updSortBtn() {
+  const btn = document.getElementById('btnSort');
+  const active = !!F.sortKey;
+  btn.classList.toggle('pr', active);
+  btn.textContent = active ? sortLabel(F.sortKey, F.sortDir) : '並び順';
+}
+
+// ── カテゴリー・タイプパネル構築（既存回覧アプリのbuildCategoryPanelと同一ロジック＋金額表示） ──
+function buildCategoryPanel(init) {
+  if (init) { selCat = F.category; selType = F.type; }
+  document.getElementById('pt').textContent = 'カテゴリー・タイプ';
+
+  const cats = {};
+  ALL_ITEMS.forEach(p => {
+    if (!p.cat) return;
+    if (!cats[p.cat]) cats[p.cat] = { cnt:0, sum:0 };
+    cats[p.cat].cnt++;
+    cats[p.cat].sum += Number(p.buyPrice)||0;
+  });
+
+  let h = '<div class="sec-label">カテゴリーを選択</div>';
+  const allCnt = ALL_ITEMS.length;
+  const allSum = ALL_ITEMS.reduce((a,p) => a + (Number(p.buyPrice)||0), 0);
+  h += `<div class="pr2 ${!selCat?'sl':''}" onclick="selCatItem(null)"><span class="pln">全カテゴリー</span><span class="pamt">¥${allSum.toLocaleString('ja-JP')}</span><span class="plc">(${allCnt})</span></div>`;
+  Object.entries(cats).forEach(([c, v]) => {
+    const cur = selCat === c;
+    h += `<div class="pr2 ${cur?'sl':''}" onclick="selCatItem('${esc(c)}')"><span class="pln">${esc(c)}</span><span class="pamt">¥${v.sum.toLocaleString('ja-JP')}</span><span class="plc">(${v.cnt})</span></div>`;
+  });
+
+  // タイプセクション（カテゴリー選択後に展開）
+  const types = {};
   if (selCat) {
-    // タイプ選択中：カテゴリー内のタイプ一覧を表示
-    const types = {};
     ALL_ITEMS.filter(p => p.cat === selCat).forEach(p => {
       if (!p.type) return;
-      if (!types[p.type]) types[p.type] = {cnt:0, sum:0};
+      if (!types[p.type]) types[p.type] = { cnt:0, sum:0 };
       types[p.type].cnt++;
       types[p.type].sum += Number(p.buyPrice)||0;
     });
-    h += `<button class="fclear" onclick="selCat=null;selType=null;render();">← ${esc(selCat)}</button>`;
+  }
+  const showTs = selCat && Object.keys(types).length > 0;
+  h += `<div id="type-section" class="${showTs?'show':''}">`;
+  if (showTs) {
+    const catCnt = cats[selCat] ? cats[selCat].cnt : 0;
+    const catSum = cats[selCat] ? cats[selCat].sum : 0;
+    h += `<div class="sec-label" style="margin-top:6px;">▼ ${esc(selCat)} のタイプ</div>`;
+    h += `<div class="pr2 ${!selType?'sl':''}" onclick="selTypeItem(null)"><span class="pln">全${esc(selCat)}</span><span class="pamt">¥${catSum.toLocaleString('ja-JP')}</span><span class="plc">(${catCnt})</span></div>`;
     Object.entries(types).forEach(([t, v]) => {
-      const sl = (t === selType) ? 'sl' : '';
-      h += `<button class="fbtn ${sl}" onclick="selType=(selType==='${esc(t)}'?null:'${esc(t)}');render();">${esc(t)}<span class="fb-amt">(${v.cnt}個 ¥${v.sum.toLocaleString('ja-JP')})</span></button>`;
-    });
-  } else {
-    // カテゴリー一覧を表示
-    const cats = {};
-    ALL_ITEMS.forEach(p => {
-      if (!p.cat) return;
-      if (!cats[p.cat]) cats[p.cat] = {cnt:0, sum:0};
-      cats[p.cat].cnt++;
-      cats[p.cat].sum += Number(p.buyPrice)||0;
-    });
-    Object.entries(cats).forEach(([c, v]) => {
-      h += `<button class="fbtn" onclick="selCat='${esc(c)}';render();">${esc(c)}<span class="fb-amt">(${v.cnt}個 ¥${v.sum.toLocaleString('ja-JP')})</span></button>`;
+      const cur = selType === t;
+      h += `<div class="pr2 ${cur?'sl':''}" onclick="selTypeItem('${esc(t)}')"><span class="pln">${esc(t)}</span><span class="pamt">¥${v.sum.toLocaleString('ja-JP')}</span><span class="plc">(${v.cnt})</span></div>`;
     });
   }
-  row.innerHTML = h;
+  h += '</div>';
+  document.getElementById('pc').innerHTML = h;
 }
 
-// ── ソート切替 ──────────────────────────
-function setSort(key, dir) {
-  sortKey = key; sortDir = dir;
+function selCatItem(cat) {
+  selCat  = cat;
+  selType = null;
+  buildCategoryPanel(false);
+}
+function selTypeItem(tp) {
+  selType = tp;
+  buildCategoryPanel(false);
+}
+
+// ── 並び順パネル構築 ──────────────────────────
+function buildSortPanel(init) {
+  if (init) { selSortKey = F.sortKey; selSortDir = F.sortDir; }
+  document.getElementById('pt').textContent = '並び順';
+  let h = '';
+  SORT_ROWS.forEach(r => {
+    const cur = selSortKey === r.key && selSortDir === r.dir;
+    h += `<div class="pr2 ${cur?'sl':''}" onclick="selSortItem('${r.key}','${r.dir}')"><span class="pln">☐ ${esc(r.label)}</span></div>`;
+  });
+  document.getElementById('pc').innerHTML = h;
+}
+function selSortItem(key, dir) {
+  if (selSortKey === key && selSortDir === dir) {
+    // 同じ項目を再タップ→選択解除（既存回覧アプリのselectSortと同一ロジック）
+    selSortKey = null; selSortDir = null;
+  } else {
+    selSortKey = key; selSortDir = dir;
+  }
+  buildSortPanel(false);
+}
+
+// ── 開いているパネルの選択内容をF（確定データ）へ書き込む（一覧へは反映しない） ──
+function commitCurPanel() {
+  if (curP === 'category') {
+    F.category = selCat;
+    F.type     = selType;
+    updCategoryBtn();
+  } else if (curP === 'sort') {
+    F.sortKey = selSortKey;
+    F.sortDir = selSortDir;
+    updSortBtn();
+  }
+}
+
+// ── パネル開閉 ──────────────────────────
+// 既存回覧アプリと同じ挙動：別のボタンに切り替える場合は、編集中の内容を先に確定保存してから次のパネルを開く
+function openPanel(name) {
+  if (document.getElementById('pn').classList.contains('op')) {
+    commitCurPanel();
+  }
+  curP = name;
+  if (name === 'category') buildCategoryPanel(true);
+  else if (name === 'sort') buildSortPanel(true);
+  syncPanelPosition();
+  document.getElementById('pn').classList.add('op');
+  document.getElementById('ov').classList.add('op');
+  if (!panelSyncRaf) startPanelSyncLoop();
+}
+function closeP() {
+  document.getElementById('pn').classList.remove('op');
+  document.getElementById('ov').classList.remove('op');
+}
+
+// ── 「表示」ボタン：現在開いている(または最後に編集していた)パネルの選択内容を確定し、
+//     パネルを閉じて一覧に反映 ──
+function applyShow() {
+  commitCurPanel();
+  F.confirmed = true;
+  closeP();
   render();
 }
-function updateSortBtnState() {
-  ['sortCntDesc','sortCntAsc','sortSumDesc','sortSumAsc'].forEach(id => document.getElementById(id).classList.remove('sl'));
-  const id = 'sort' + (sortKey==='cnt'?'Cnt':'Sum') + (sortDir==='desc'?'Desc':'Asc');
-  document.getElementById(id).classList.add('sl');
+
+// ── 「クリア」ボタン：既存回覧アプリのclrAllと同一ロジック ──
+function clrAll() {
+  F = { category:null, type:null, sortKey:null, sortDir:null, confirmed:false };
+  selCat = null; selType = null;
+  selSortKey = null; selSortDir = null;
+  curP = null;
+  closeP();
+  updCategoryBtn();
+  updSortBtn();
+  render();
 }
 
 // ── カード1件分のHTML ──────────────────────────
@@ -201,34 +372,50 @@ function cardHtml(g, idx, total) {
   return `<div class="card">
     <div class="row1">
       <span class="gn">${esc(g.name)}</span>
-      <span class="row1-r"><span class="gc">${g.cnt}個</span> <a class="link-btn" href="${linkUrl}" target="_blank" title="回覧アプリで詳細を見る">→</a></span>
+      <span class="gc">${g.cnt}個</span>
     </div>
     <div class="row2">
+      <span class="lbl-buy">購入金額</span>
       <span class="buy ${buyColorClass(g.sum)}">¥${Math.round(g.sum).toLocaleString('ja-JP')}</span>
-      ${profitBadge(g)}
+      <span class="lbl-profit">利益率</span>
+      ${profitValue(g)}
       <span class="seq">${String(idx+1).padStart(2,'0')}/${String(total).padStart(2,'0')}</span>
     </div>
-    <div class="row3">${stHtml}</div>
+    <div class="row3">
+      <span class="st-wrap">${stHtml}</span>
+      <a class="link-btn" href="${linkUrl}" target="_blank" title="回覧アプリで詳細を見る">→</a>
+    </div>
   </div>`;
 }
 
 // ── メイン描画 ──────────────────────────
 function render() {
-  renderFilterRow();
-  updateSortBtnState();
-
-  const groups = buildGroups(filteredItems());
-  groups.sort((a,b) => {
-    const av = sortKey==='cnt' ? a.cnt : a.sum;
-    const bv = sortKey==='cnt' ? b.cnt : b.sum;
-    return sortDir==='desc' ? bv-av : av-bv;
-  });
-
-  document.getElementById('hcnt').textContent = groups.length + '件表示中';
+  updCategoryBtn();
+  updHeader();
 
   const list = document.getElementById('list');
+
+  // 未確定（カテゴリー選択→「表示」を押す前）は一覧を表示しない
+  if (!F.confirmed) {
+    document.getElementById('hdr-c').textContent = '00 件';
+    list.className = 'emptyhint';
+    list.textContent = '下の「カテゴリー」から条件を選び、「表示」を押してください';
+    return;
+  }
+
+  const groups = buildGroups(filteredItems());
+  const sk = F.sortKey || 'cnt';
+  const sd = F.sortDir || 'desc';
+  groups.sort((a,b) => {
+    const av = sk==='cnt' ? a.cnt : a.sum;
+    const bv = sk==='cnt' ? b.cnt : b.sum;
+    return (sd==='desc' || sd==='high') ? bv-av : av-bv;
+  });
+
+  document.getElementById('hdr-c').textContent = String(groups.length).padStart(2,'0') + ' 件';
+
   if (groups.length === 0) {
-    list.className = 'empty';
+    list.className = 'noresult';
     list.textContent = '該当する商品がありません';
     return;
   }
@@ -236,14 +423,62 @@ function render() {
   list.innerHTML = groups.map((g,i) => cardHtml(g, i, groups.length)).join('');
 }
 
+// ── パネル位置の同期：#wrap・#botの実座標を毎回計算し、#ov/#pnにpxで直接反映 ──
+// （vh/dvhのブラウザ間差異やアドレスバー表示変化の影響を受けないようにするため）
+function syncPanelPosition() {
+  const wrap = document.getElementById('wrap');
+  const bot  = document.getElementById('bot');
+  const ov   = document.getElementById('ov');
+  const pn   = document.getElementById('pn');
+  const wrapRect = wrap.getBoundingClientRect();
+  const botRect  = bot.getBoundingClientRect();
+
+  ov.style.left   = wrapRect.left + 'px';
+  ov.style.width  = wrapRect.width + 'px';
+  ov.style.top    = wrapRect.top + 'px';
+  ov.style.height = Math.max(0, botRect.top - wrapRect.top) + 'px';
+
+  pn.style.left      = wrapRect.left + 'px';
+  pn.style.width     = wrapRect.width + 'px';
+  pn.style.bottom    = Math.max(0, window.innerHeight - botRect.top) + 'px';
+  pn.style.maxHeight = Math.max(0, botRect.top - wrapRect.top - 14) + 'px';
+}
+
+let panelSyncRaf = null;
+// パネルが開いている間は毎フレーム同期し続ける（アドレスバーの出入り等、途中の変化にも追従するため）
+function startPanelSyncLoop() {
+  syncPanelPosition();
+  if (document.getElementById('pn').classList.contains('op')) {
+    panelSyncRaf = requestAnimationFrame(startPanelSyncLoop);
+  } else {
+    panelSyncRaf = null;
+  }
+}
+function initPanelSyncWatchers() {
+  syncPanelPosition();
+  window.addEventListener('resize', syncPanelPosition);
+  window.addEventListener('orientationchange', syncPanelPosition);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncPanelPosition);
+    window.visualViewport.addEventListener('scroll', syncPanelPosition);
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(syncPanelPosition).observe(document.getElementById('bot'));
+    new ResizeObserver(syncPanelPosition).observe(document.getElementById('wrap'));
+  }
+}
+
 // ── 初期化 ──────────────────────────
 function init() {
   gasCall('getLightItems', {}, res => {
     if (!res || !res.ok) {
+      document.getElementById('list').className = 'noresult';
       document.getElementById('list').textContent = 'データ取得に失敗しました';
       return;
     }
     ALL_ITEMS = res.items;
+    initPanelSyncWatchers();
+    updSortBtn();
     render();
   });
 }
