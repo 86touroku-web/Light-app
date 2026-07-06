@@ -54,20 +54,18 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 
 /* ── ボトムコントロールパネル ── */
 #bot{background:#fff;border-top:1px solid #ccc;padding:6px 6px 8px;flex-shrink:0;}
-#btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:5px;}
-.bn{font-size:11px;padding:7px 2px;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;text-align:center;font-family:inherit;font-weight:600;}
-.bn.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;font-weight:700;}
-.bn-tall{grid-row:span 2;font-size:12px;font-weight:700;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;font-family:inherit;line-height:1.3;}
-.bn-tall.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;}
+#btns{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;}
+.bn{font-size:13px;font-weight:700;padding:16px 2px;border-radius:7px;border:1px solid #888;background:#f0f0f0;color:#111;cursor:pointer;text-align:center;font-family:inherit;line-height:1.3;}
+.bn.pr{background:#3845fd;color:#ffffff;border-color:#3845fd;}
 
-/* ── オーバーレイ・カテゴリーパネル ── */
-#ov{position:absolute;left:0;right:0;top:0;bottom:var(--bot-h,74px);background:rgba(0,0,0,.45);z-index:9;display:none;}
+/* ── オーバーレイ・パネル共通(カテゴリー／並び順) ── */
+#ov{position:absolute;left:0;right:0;top:0;bottom:var(--bot-h,70px);background:rgba(0,0,0,.45);z-index:9;display:none;}
 #ov.op{display:block;}
-#pn{position:absolute;bottom:var(--bot-h,74px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,74px)));transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;max-height:calc(100% - var(--bot-h,74px) - 14px);display:flex;flex-direction:column;}
+#pn{position:absolute;bottom:var(--bot-h,70px);left:0;right:0;background:#fff;border-radius:14px 14px 0 0;transform:translateY(calc(100% + var(--bot-h,70px)));transition:transform .27s cubic-bezier(.32,.72,0,1);z-index:10;max-height:calc(100% - var(--bot-h,70px) - 14px);display:flex;flex-direction:column;overflow:hidden;}
 #pn.op{transform:translateY(0);}
-.ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;border-bottom:1px solid #ccc;flex-shrink:0;}
-.pt{font-size:14px;font-weight:700;color:#111;}
-.pc{font-size:12px;color:#555;cursor:pointer;border:none;background:none;font-family:inherit;font-weight:600;}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;background:#74d1fa;flex-shrink:0;}
+.pt{font-size:15px;font-weight:700;color:#111;}
+.pc{font-size:13px;color:#333;cursor:pointer;border:none;background:none;font-family:inherit;font-weight:600;}
 .pl{overflow-y:auto;padding:6px 9px;flex:1;}
 .sec-label{font-size:11px;color:#555;font-weight:700;padding:6px 2px 3px;border-bottom:1px solid #ddd;margin-bottom:4px;}
 .pr2{display:flex;justify-content:space-between;align-items:center;padding:10px 11px;border-radius:8px;margin-bottom:3px;cursor:pointer;background:#f0f2f1;gap:8px;}
@@ -93,13 +91,10 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 
   <div id="bot">
     <div id="btns">
-      <button class="bn-tall" onclick="clrAll()">✕<br>クリア</button>
-      <button class="bn-tall" id="btnCategory" onclick="openCategoryPanel()">カテゴリー</button>
-      <button class="bn-tall" onclick="applyShow()">表示</button>
-      <button class="bn" id="btnHigh" onclick="toggleSort('price','high')">高</button>
-      <button class="bn" id="btnLow" onclick="toggleSort('price','low')">低</button>
-      <button class="bn" id="btnMany" onclick="toggleSort('cnt','desc')">多</button>
-      <button class="bn" id="btnFew" onclick="toggleSort('cnt','asc')">少</button>
+      <button class="bn" onclick="clrAll()">✕<br>クリア</button>
+      <button class="bn" id="btnCategory" onclick="openPanel('category')">カテゴリー</button>
+      <button class="bn" onclick="applyShow()">表示</button>
+      <button class="bn" id="btnSort" onclick="openPanel('sort')">並び順</button>
     </div>
   </div>
 </div>
@@ -122,10 +117,21 @@ const BROWSE_URL = 'https://86touroku-web.github.io/Browse/browse_index.html'; /
 let ALL_ITEMS = [];
 
 // 確定済みフィルター（「表示」ボタンで確定するまでは一覧に反映されない）
-let F = { category: null, type: null, confirmed: false, sortKey: 'cnt', sortDir: 'desc' };
+let F = { category: null, type: null, sortKey: 'cnt', sortDir: 'desc', confirmed: false };
 
-// パネル編集中の一時選択（「表示」ボタンを押すまでFには反映しない）
+// パネル編集中の一時選択（パネル切替時／「表示」ボタン押下時にFへ反映）
 let selCat = null, selType = null;
+let selSortKey = 'cnt', selSortDir = 'desc';
+
+// 現在開いているパネル名（'category' | 'sort' | null）
+let curP = null;
+
+const SORT_ROWS = [
+  { key:'cnt',   dir:'desc', label:'在庫が多い' },
+  { key:'cnt',   dir:'asc',  label:'在庫が少ない' },
+  { key:'price', dir:'high', label:'金額が高い' },
+  { key:'price', dir:'low',  label:'金額が安い' },
+];
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -213,18 +219,15 @@ function updCategoryBtn() {
   btn.textContent = F.type || F.category || 'カテゴリー';
 }
 
-// ── ソートボタンの見た目更新 ──────────────────────────
-function updSortBtns() {
-  document.getElementById('btnHigh').classList.toggle('pr', F.sortKey==='price' && F.sortDir==='high');
-  document.getElementById('btnLow').classList.toggle('pr', F.sortKey==='price' && F.sortDir==='low');
-  document.getElementById('btnMany').classList.toggle('pr', F.sortKey==='cnt' && F.sortDir==='desc');
-  document.getElementById('btnFew').classList.toggle('pr', F.sortKey==='cnt' && F.sortDir==='asc');
+// ── 並び順ボタンの見た目更新（選択中は反転＋ラベル差替え） ──
+function sortLabel(key, dir) {
+  const row = SORT_ROWS.find(r => r.key===key && r.dir===dir);
+  return row ? row.label : '並び順';
 }
-
-function toggleSort(key, dir) {
-  F.sortKey = key; F.sortDir = dir;
-  updSortBtns();
-  render();
+function updSortBtn() {
+  const btn = document.getElementById('btnSort');
+  btn.classList.add('pr');
+  btn.textContent = sortLabel(F.sortKey, F.sortDir);
 }
 
 // ── カテゴリー・タイプパネル構築（既存回覧アプリのbuildCategoryPanelと同一ロジック＋金額表示） ──
@@ -285,9 +288,44 @@ function selTypeItem(tp) {
   buildCategoryPanel(false);
 }
 
+// ── 並び順パネル構築 ──────────────────────────
+function buildSortPanel(init) {
+  if (init) { selSortKey = F.sortKey; selSortDir = F.sortDir; }
+  document.getElementById('pt').textContent = '並び順';
+  let h = '';
+  SORT_ROWS.forEach(r => {
+    const cur = selSortKey === r.key && selSortDir === r.dir;
+    h += `<div class="pr2 ${cur?'sl':''}" onclick="selSortItem('${r.key}','${r.dir}')"><span class="pln">☐ ${esc(r.label)}</span></div>`;
+  });
+  document.getElementById('pc').innerHTML = h;
+}
+function selSortItem(key, dir) {
+  selSortKey = key; selSortDir = dir;
+  buildSortPanel(false);
+}
+
+// ── 開いているパネルの選択内容をF（確定データ）へ書き込む（一覧へは反映しない） ──
+function commitCurPanel() {
+  if (curP === 'category') {
+    F.category = selCat;
+    F.type     = selType;
+    updCategoryBtn();
+  } else if (curP === 'sort') {
+    F.sortKey = selSortKey;
+    F.sortDir = selSortDir;
+    updSortBtn();
+  }
+}
+
 // ── パネル開閉 ──────────────────────────
-function openCategoryPanel() {
-  buildCategoryPanel(true);
+// 既存回覧アプリと同じ挙動：別のボタンに切り替える場合は、編集中の内容を先に確定保存してから次のパネルを開く
+function openPanel(name) {
+  if (document.getElementById('pn').classList.contains('op')) {
+    commitCurPanel();
+  }
+  curP = name;
+  if (name === 'category') buildCategoryPanel(true);
+  else if (name === 'sort') buildSortPanel(true);
   document.getElementById('pn').classList.add('op');
   document.getElementById('ov').classList.add('op');
 }
@@ -296,23 +334,24 @@ function closeP() {
   document.getElementById('ov').classList.remove('op');
 }
 
-// ── 「表示」ボタン：パネルの選択内容を確定し、パネルを閉じて一覧に反映 ──
+// ── 「表示」ボタン：現在開いている(または最後に編集していた)パネルの選択内容を確定し、
+//     パネルを閉じて一覧に反映 ──
 function applyShow() {
-  F.category  = selCat;
-  F.type      = selType;
+  commitCurPanel();
   F.confirmed = true;
   closeP();
-  updCategoryBtn();
   render();
 }
 
 // ── 「クリア」ボタン：既存回覧アプリのclrAllと同一ロジック ──
 function clrAll() {
-  F = { category:null, type:null, confirmed:false, sortKey:'cnt', sortDir:'desc' };
+  F = { category:null, type:null, sortKey:'cnt', sortDir:'desc', confirmed:false };
   selCat = null; selType = null;
+  selSortKey = 'cnt'; selSortDir = 'desc';
+  curP = null;
   closeP();
   updCategoryBtn();
-  updSortBtns();
+  updSortBtn();
   render();
 }
 
@@ -389,7 +428,7 @@ function init() {
     ALL_ITEMS = res.items;
     setBotHeight();
     window.addEventListener('resize', setBotHeight);
-    updSortBtns();
+    updSortBtn();
     render();
   });
 }
