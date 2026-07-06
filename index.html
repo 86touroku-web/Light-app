@@ -79,6 +79,11 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .pr2.sl .plc{color:#0010cc;font-weight:700;}
 #type-section{display:none;margin-top:8px;}
 #type-section.show{display:block;}
+
+/* ── パネル内ローディング（データ未取得時） ── */
+.panel-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;color:#666;font-size:13px;gap:12px;}
+.spinner{width:28px;height:28px;border:3px solid #d8e0de;border-top-color:#3845fd;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -117,6 +122,7 @@ const GAS_URL    = 'https://script.google.com/macros/s/AKfycbxYkNsXrKwaI49xu292E
 const BROWSE_URL = 'https://86touroku-web.github.io/Browse/browse_index.html'; // 回覧アプリ側
 
 let ALL_ITEMS = [];
+let DATA_READY = false; // getLightItemsの応答が届くまではfalse（パネルはローディング表示にする）
 
 // 確定済みフィルター（「表示」ボタンで確定するまでは一覧に反映されない）
 let F = { category: null, type: null, sortKey: null, sortDir: null, confirmed: false };
@@ -238,6 +244,11 @@ function buildCategoryPanel(init) {
   if (init) { selCat = F.category; selType = F.type; }
   document.getElementById('pt').textContent = 'カテゴリー・タイプ';
 
+  if (!DATA_READY) {
+    document.getElementById('pc').innerHTML = '<div class="panel-loading"><div class="spinner"></div><div>読み込み中です…</div></div>';
+    return;
+  }
+
   const cats = {};
   ALL_ITEMS.forEach(p => {
     if (!p.cat) return;
@@ -295,6 +306,12 @@ function selTypeItem(tp) {
 function buildSortPanel(init) {
   if (init) { selSortKey = F.sortKey; selSortDir = F.sortDir; }
   document.getElementById('pt').textContent = '並び順';
+
+  if (!DATA_READY) {
+    document.getElementById('pc').innerHTML = '<div class="panel-loading"><div class="spinner"></div><div>読み込み中です…</div></div>';
+    return;
+  }
+
   let h = '';
   SORT_ROWS.forEach(r => {
     const cur = selSortKey === r.key && selSortDir === r.dir;
@@ -477,9 +494,13 @@ function init() {
       return;
     }
     ALL_ITEMS = res.items;
+    DATA_READY = true;
     initPanelSyncWatchers();
     updSortBtn();
     render();
+    // データ到着前にパネルを開いていた場合、ローディング表示から実データ表示へ更新
+    if (curP === 'category') buildCategoryPanel(true);
+    else if (curP === 'sort') buildSortPanel(true);
   });
 }
 init();
