@@ -31,13 +31,13 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .noresult{padding:24px;text-align:center;font-size:13px;color:#444;font-weight:600;}
 
 /* ── 商品名グループカード（3行構成） ── */
-.card{display:flex;flex-direction:column;padding:8px 12px;margin:6px 8px;background:#ffffff;border-radius:9px;border:1.5px solid #cfd8dc;gap:3px;}
+.card{display:flex;flex-direction:column;padding:0 0 8px;margin:6px 8px;background:#ffffff;border-radius:9px;border:1px solid #000000;gap:3px;overflow:hidden;}
 
-.row1{display:flex;align-items:baseline;justify-content:space-between;gap:6px;}
+.row1{display:flex;align-items:baseline;justify-content:space-between;gap:6px;background:#d2f6dc;border-bottom:1px solid #000000;padding:8px 12px;}
 .gn{font-size:15px;font-weight:700;color:#1a5f4a;line-height:1.3;flex:1 1 auto;min-width:0;overflow-wrap:break-word;word-break:break-word;}
 .gc{font-size:13px;font-weight:700;color:#111;flex-shrink:0;white-space:nowrap;}
 
-.row2{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;}
+.row2{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;padding:0 12px;}
 .lbl-buy{color:#3845fd;}
 .buy{white-space:nowrap;}
 .pbuy-c0{color:#000000;}
@@ -50,7 +50,7 @@ body{background:#f0f4f3;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;ov
 .pno{color:#1a5f4a;white-space:nowrap;}
 .seq{font-size:14px;font-weight:700;color:#000000;white-space:nowrap;margin-left:auto;flex-shrink:0;}
 
-.row3{display:flex;align-items:center;gap:6px;}
+.row3{display:flex;align-items:center;gap:6px;padding:0 12px;}
 .st-wrap{font-size:12px;font-weight:700;color:#111;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-width:0;}
 .st-wrap::-webkit-scrollbar{display:none;}
 .st-item{margin-right:6px;}
@@ -151,8 +151,26 @@ const SORT_ROWS = [
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // カテゴリー・タイプパネルの件数表示：4桁ゼロ埋め＋直前に半角スペース1つ
+// カテゴリー・タイプパネルの件数表示：4桁幅を確保し、不足分は見えないスペースで左詰め埋め
 function cntBadge(n) {
-  return ' ' + String(n).padStart(4, '0');
+  const s = String(n);
+  return '\u00A0'.repeat(Math.max(0, 4 - s.length)) + s;
+}
+
+// ヘッダー用：合計金額（6桁ゼロ埋め＋標準3桁カンマ区切り）
+function headerAmountStr(sum) {
+  const s = String(Math.round(sum)).padStart(6, '0');
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) out += ',';
+    out += s[i];
+  }
+  return out;
+}
+// ヘッダー用：合計件数（4桁幅、不足分は見えないスペースで左詰め埋め）
+function headerCountStr(n) {
+  const s = String(n);
+  return '\u00A0'.repeat(Math.max(0, 4 - s.length)) + s;
 }
 
 // ── JSONP通信 ──────────────────────────────
@@ -187,11 +205,21 @@ function buyColorClass(sum) {
 function profitValue(g) {
   if (g.profitType === null) return '';
   if (g.profitName === null) {
-    return `<span class="pno">-/${g.profitType.toFixed(1)}%</span>`;
+    return `<span class="pno">00.0/${g.profitType.toFixed(1)}%</span>`;
   }
   const up = g.profitName >= g.profitType;
   const cl = up ? 'pu' : 'pd';
   return `<span class="${cl}">${g.profitName.toFixed(1)}/${g.profitType.toFixed(1)}%</span>`;
+}
+
+// ── 金額の桁揃え：標準の3桁カンマ区切りで整形した後、
+//     見た目の幅がガタつかないよう不足桁を「見えないスペース」で左詰め埋めする
+//     （ゼロ埋めだと見づらいとのご要望のため、0の代わりに半角スペース(non-breaking space)で埋める）
+function moneyPad(n, width) {
+  width = width || 6; // 例: "16,900" = 6文字 相当の幅を確保
+  const s = Math.round(n).toLocaleString('ja-JP');
+  const padLen = Math.max(0, width - s.length);
+  return '\u00A0'.repeat(padLen) + s;
 }
 
 const STATUS_LIST = ['在庫','検品済','保品','No有','出タイ待','出品'];
@@ -396,9 +424,9 @@ function cardHtml(g, idx, total) {
       <span class="gc">${g.cnt}個</span>
     </div>
     <div class="row2">
-      <span class="lbl-buy">購入金額</span>
-      <span class="buy ${buyColorClass(g.sum)}">¥${Math.round(g.sum).toLocaleString('ja-JP')}</span>
-      <span class="lbl-profit">利益率</span>
+      <span class="lbl-buy">金額</span>
+      <span class="buy ${buyColorClass(g.sum)}">¥${moneyPad(g.sum)}</span>
+      <span class="lbl-profit">利益</span>
       ${profitValue(g)}
       <span class="seq">${String(idx+1).padStart(2,'0')}/${String(total).padStart(2,'0')}</span>
     </div>
@@ -418,7 +446,7 @@ function render() {
 
   // 未確定（カテゴリー選択→「表示」を押す前）は一覧を表示しない
   if (!F.confirmed) {
-    document.getElementById('hdr-c').textContent = '00 件';
+    document.getElementById('hdr-c').innerHTML = `¥${headerAmountStr(0)}\u00A0${headerCountStr(0)}件`;
     list.className = 'emptyhint';
     list.textContent = '下の「カテゴリー」から条件を選び、「表示」を押してください';
     return;
@@ -433,7 +461,8 @@ function render() {
     return (sd==='desc' || sd==='high') ? bv-av : av-bv;
   });
 
-  document.getElementById('hdr-c').textContent = String(groups.length).padStart(2,'0') + ' 件';
+  const totalAmount = groups.reduce((a, g) => a + g.sum, 0);
+  document.getElementById('hdr-c').innerHTML = `¥${headerAmountStr(totalAmount)}\u00A0${headerCountStr(groups.length)}件`;
 
   if (groups.length === 0) {
     list.className = 'noresult';
