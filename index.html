@@ -159,15 +159,9 @@ function cntBadge(n) {
   return n;
 }
 
-// ヘッダー用：合計金額（6桁ゼロ埋め＋標準3桁カンマ区切り）
+// ヘッダー用：合計金額（標準3桁カンマ区切り。桁揃えはCSS側の固定幅+右揃えで行う）
 function headerAmountStr(sum) {
-  const s = String(Math.round(sum)).padStart(6, '0');
-  let out = '';
-  for (let i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 === 0) out += ',';
-    out += s[i];
-  }
-  return out;
+  return Math.round(sum).toLocaleString('ja-JP');
 }
 // ヘッダー用：合計件数（桁揃えはCSS側の固定幅+右揃えで行うため、そのまま返す）
 function headerCountStr(n) {
